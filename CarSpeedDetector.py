@@ -14,4 +14,13 @@ frame_rate = 10
 ppm = 8.8
 
 def estimate_speed(pos1, pos2, ppm, frame_rate):
-    math.sqrt((pos2[0] - pos1[0]) ** 2 + (pos2[1] - pos1[1]) ** 2)
+    dist_pixels = math.sqrt((pos2[0] - pos1[0]) ** 2 + (pos2[1] - pos1[1]) ** 2)
+    dist_meter = dist_pixels / ppm
+    speed = dist_meter * frame_rate * 3.6
+    return speed 
+
+def detect_cars(frame, frame_rate, ppm):
+    global pos_list_prev
+    img_tensor = torchvision.transforms.ToTensor()(frame)
+    with torch.inference_mode():
+        preds = model(img_tensor)
