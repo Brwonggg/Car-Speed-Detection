@@ -10,6 +10,7 @@ car_tracker = {}
 
 def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model):
     
+    #model.track recognises the same car throughout the frames
     results = model.track(frame, persist=True, verbose=False)
     
     #No detections this frame
@@ -50,16 +51,19 @@ def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model):
             frames_since_update = frame_count - car_tracker[track_id]["last_update"]
             frames_since_first  = frame_count - car_tracker[track_id]["first_seen"]
 
-            # first reading after 2 frames, update every 10 frames after
+            #First reading after 2 frames, update every 5 frames after
             if frames_elapsed >= 2 and (car_tracker[track_id]["speed"] is None or frames_since_update >= 5):
                 pos1  = car_tracker[track_id]["pos"]
+                
                 speed = estimate_speed(pos1, pos, PPM, FRAME_RATE, frames_elapsed)
+                
                 car_tracker[track_id]["speed"] = speed
                 car_tracker[track_id]["last_update"] = frame_count
                 car_tracker[track_id]["pos"] = pos
                 car_tracker[track_id]["frame"] = frame_count
                 car_tracker[track_id]["readings"] += 1
 
+                #Ensures speed readings are only registered and shown after stabilising
                 if frames_since_first >= 20 and car_tracker[track_id]["readings"] >= 10:
                     car_tracker[track_id]["stabilised"] = True
 
@@ -67,8 +71,9 @@ def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model):
                         issue_ticket(speed)
                         print(f"Speeding ticket: {speed:.1f} km/h — car {track_id}")
 
-        stabilised   = car_tracker[track_id].get("stabilised", False)
+        stabilised = car_tracker[track_id].get("stabilised", False)
         stored_speed = car_tracker[track_id].get("speed")
+        
         if stabilised and stored_speed is not None:
             speed_text = f"{stored_speed:.1f} km/h"
         else:
