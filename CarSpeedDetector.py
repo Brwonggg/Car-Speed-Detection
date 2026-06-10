@@ -37,8 +37,8 @@ def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker):
             continue
 
         track_id = int(box.id[0])
-        cls      = int(box.cls[0])
-        score    = float(box.conf[0])
+        cls = int(box.cls[0])
+        score = float(box.conf[0])
 
         if cls != 2 or score < CONFIDENCE_THRESHOLD:
             continue
@@ -52,17 +52,17 @@ def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker):
 
         if track_id not in car_tracker:
             car_tracker[track_id] = {
-                "pos":         pos,
-                "frame":       frame_count,
-                "speed":       None,
+                "pos": pos,
+                "frame": frame_count,
+                "speed": None,
                 "last_update": frame_count,
-                "first_seen":  frame_count,   
-                "readings":    0, 
+                "first_seen": frame_count,   
+                "readings": 0, 
                 "stabilised": False
             }
 
         else:
-            frames_elapsed      = frame_count - car_tracker[track_id]["frame"]
+            frames_elapsed = frame_count - car_tracker[track_id]["frame"]
             frames_since_update = frame_count - car_tracker[track_id]["last_update"]
             frames_since_first  = frame_count - car_tracker[track_id]["first_seen"]
 
@@ -70,11 +70,11 @@ def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker):
             if frames_elapsed >= 2 and (car_tracker[track_id]["speed"] is None or frames_since_update >= 5):
                 pos1  = car_tracker[track_id]["pos"]
                 speed = estimate_speed(pos1, pos, PPM, FRAME_RATE, frames_elapsed)
-                car_tracker[track_id]["speed"]       = speed
+                car_tracker[track_id]["speed"] = speed
                 car_tracker[track_id]["last_update"] = frame_count
-                car_tracker[track_id]["pos"]         = pos
-                car_tracker[track_id]["frame"]       = frame_count
-                car_tracker[track_id]["readings"]   += 1
+                car_tracker[track_id]["pos"] = pos
+                car_tracker[track_id]["frame"] = frame_count
+                car_tracker[track_id]["readings"] += 1
 
                 if frames_since_first >= 20 and car_tracker[track_id]["readings"] >= 10:
                     car_tracker[track_id]["stabilised"] = True
@@ -105,7 +105,7 @@ def issue_ticket(speed):
 frame_count = 0
 car_tracker = {}
 
-cap = cv.VideoCapture('/Users/brandon/Downloads/Cars Driving NEW.mov')
+cap = cv.VideoCapture("/Users/brandon/Downloads/NEW Moving Cars.mov")
 if not cap.isOpened():
     print("Error: Unable to load video")
     exit()

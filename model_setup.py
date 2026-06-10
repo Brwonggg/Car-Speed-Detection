@@ -7,8 +7,6 @@ def model_setup():
     model = YOLO("yolov8n.pt")
 
     model = model.to(device)
-    print(f"Using: {device}")
-
-    model.eval()
+    
 
     return model

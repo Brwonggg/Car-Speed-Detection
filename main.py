@@ -5,10 +5,12 @@ from model_setup import model_setup
 
 FRAME_RATE = 31
 PPM = 10
-FILE_PATH = "/Users/brandon/Downloads/NEW Moving Cars.mov"
+FILE_PATH = "/Users/brandon/Desktop/Screen Recording 2026-06-10 at 11.44.53 AM.mov"
 
 frame_count = 0
 car_tracker = {}
+
+model = model_setup()
 
 cap = cv.VideoCapture(FILE_PATH)
 if not cap.isOpened():
@@ -29,8 +31,6 @@ while cap.isOpened():
     # resize to 25% — 2880x1864 → 720x466
     #frame = cv.resize(frame, (0, 0), fx=0.25, fy=0.25)
     
-    model = model_setup()
-
     start = time.time()
     processed_frame = detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model)
     end = time.time()

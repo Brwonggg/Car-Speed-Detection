@@ -10,8 +10,6 @@ SPEED_LIMIT = 50
 frame_count = 0
 car_tracker = {}
 
-
-
 def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model):
     
     results = model.track(frame, persist=True, verbose=False)
