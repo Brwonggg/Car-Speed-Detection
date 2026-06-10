@@ -63,9 +63,9 @@ def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model):
                 if frames_since_first >= 20 and car_tracker[track_id]["readings"] >= 10:
                     car_tracker[track_id]["stabilised"] = True
 
-                if speed >= SPEED_LIMIT and frames_since_first >= 20 and car_tracker[track_id]["readings"] >= 3:      
-                    issue_ticket(speed)
-                    print(f"Speeding ticket: {speed:.1f} km/h — car {track_id}")
+                    if speed >= SPEED_LIMIT and frames_since_first >= 20 and car_tracker[track_id]["readings"] >= 3:      
+                        issue_ticket(speed)
+                        print(f"Speeding ticket: {speed:.1f} km/h — car {track_id}")
 
         stabilised   = car_tracker[track_id].get("stabilised", False)
         stored_speed = car_tracker[track_id].get("speed")
