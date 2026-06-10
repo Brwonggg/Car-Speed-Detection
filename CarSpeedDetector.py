@@ -1,14 +1,10 @@
 import cv2 as cv
-import numpy as np
 import torch
-import torchvision
-import math 
-import time
+import math, time
 from ultralytics import YOLO
 
 device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
-WEIGHTS = "SSDLite320_MobileNet_V3_Large_Weights.DEFAULT"
 model = YOLO("yolov8n.pt")
 
 model = model.to(device)
@@ -16,48 +12,86 @@ print(f"Using: {device}")
 
 model.eval()
 
-CONFIDENCE_THRESHOLD = 0.3
+CONFIDENCE_THRESHOLD = 0.7
 FRAME_RATE = 31
 PPM = 10
 SPEED_LIMIT = 50
 FINE_AMOUNT = 25
 
-
-def estimate_speed(pos1, pos2, PPM, FRAME_RATE):
+def estimate_speed(pos1, pos2, PPM, FRAME_RATE, frames_elapsed):
     dist_pixels = math.sqrt((pos2[0] - pos1[0]) ** 2 + (pos2[1] - pos1[1]) ** 2)
     dist_meter = dist_pixels / PPM
-    speed = dist_meter / FRAME_RATE * 3.6
+    time_elapsed = frames_elapsed / FRAME_RATE
+    speed = dist_meter / time_elapsed * 3.6
     return speed 
 
-def detect_car(frame, FRAME_RATE, PPM):
+def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker):
     global pos_list_prev
-    results = model(frame, verbose=False)
+    results = model.track(frame, persist=True, verbose=False)
     
-    for i, box in enumerate(results[0].boxes):
-        cls   = int(box.cls[0])
-        score = float(box.conf[0])
+    if results[0].boxes.id is None:   # no detections this frame
+        return frame
+
+    for box in results[0].boxes:
+        if box.id is None:
+            continue
+
+        track_id = int(box.id[0])
+        cls      = int(box.cls[0])
+        score    = float(box.conf[0])
 
         if cls != 2 or score < CONFIDENCE_THRESHOLD:
             continue
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
-        if score >= CONFIDENCE_THRESHOLD:
-            cv.rectangle(frame,(x1,y1), (x2,y2), (0,255,0), 2)
-            centroid_x = (x1 + x2) / 2
-            centroid_y = (y1 + y2) / 2
-            pos_list = [centroid_x, centroid_y]
 
-            if pos_list_prev is not None:
-                speed = estimate_speed(pos_list_prev, pos_list, PPM, FRAME_RATE)
-                speed_text = int(speed)
-                if speed >= SPEED_LIMIT:
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        cv.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+        cx  = (x1 + x2) / 2
+        cy  = (y1 + y2) / 2
+        pos = [cx, cy]
+
+        if track_id not in car_tracker:
+            car_tracker[track_id] = {
+                "pos":         pos,
+                "frame":       frame_count,
+                "speed":       None,
+                "last_update": frame_count,
+                "first_seen":  frame_count,   
+                "readings":    0, 
+                "stabilised": False
+            }
+
+        else:
+            frames_elapsed      = frame_count - car_tracker[track_id]["frame"]
+            frames_since_update = frame_count - car_tracker[track_id]["last_update"]
+            frames_since_first  = frame_count - car_tracker[track_id]["first_seen"]
+
+            # first reading after 2 frames, update every 10 frames after
+            if frames_elapsed >= 2 and (car_tracker[track_id]["speed"] is None or frames_since_update >= 5):
+                pos1  = car_tracker[track_id]["pos"]
+                speed = estimate_speed(pos1, pos, PPM, FRAME_RATE, frames_elapsed)
+                car_tracker[track_id]["speed"]       = speed
+                car_tracker[track_id]["last_update"] = frame_count
+                car_tracker[track_id]["pos"]         = pos
+                car_tracker[track_id]["frame"]       = frame_count
+                car_tracker[track_id]["readings"]   += 1
+
+                if frames_since_first >= 20 and car_tracker[track_id]["readings"] >= 10:
+                    car_tracker[track_id]["stabilised"] = True
+
+                if speed >= SPEED_LIMIT and frames_since_first >= 20 and car_tracker[track_id]["readings"] >= 3:      
                     issue_ticket(speed)
-                    print("Speeding ticket issued")
-            else:
-                speed = 0
-                speed_text = "calculating..."
+                    print(f"Speeding ticket: {speed:.1f} km/h — car {track_id}")
+
+        stabilised   = car_tracker[track_id].get("stabilised", False)
+        stored_speed = car_tracker[track_id].get("speed")
+        if stabilised and stored_speed is not None:
+            speed_text = f"{stored_speed:.1f} km/h"
+        else:
+            speed_text = "..."       
             
-            cv.putText(frame, f"Speed: {speed_text}", (x1,y1 + 20), cv.FONT_HERSHEY_SIMPLEX, 3, (0,255,0),2)
-            pos_list_prev = pos_list
+        cv.putText(frame, f"Speed: {speed_text}", (x1,y1 + 20), cv.FONT_HERSHEY_SIMPLEX, 3, (0,255,0),2)
+        
     return frame
     
 def issue_ticket(speed):
@@ -69,8 +103,9 @@ def issue_ticket(speed):
         file.write("\n")
     
 frame_count = 0
+car_tracker = {}
 
-cap = cv.VideoCapture('/Users/brandon/Downloads/NEW Moving Cars.mov')
+cap = cv.VideoCapture('/Users/brandon/Downloads/Cars Driving NEW.mov')
 if not cap.isOpened():
     print("Error: Unable to load video")
     exit()
@@ -90,7 +125,7 @@ while cap.isOpened():
     #frame = cv.resize(frame, (0, 0), fx=0.25, fy=0.25)
     
     start = time.time()
-    processed_frame = detect_car(frame, FRAME_RATE, PPM)
+    processed_frame = detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker)
     end = time.time()
     print(f"Inference: {(end-start)*1000:.1f}ms")
     
