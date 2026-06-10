@@ -1,7 +1,11 @@
 ## Preview(video demonstration)
 
+
+
+
+
 ## Intro 
-This is a practice project that utilises computer vision/object detection, leveraging a "You Only Look Once"(YOLO) model from ultralytics.
+This is a practice project that utilises computer vision/object detection, leveraging a "You Only Look Once"(YOLO) model from Ultralytics.
 
 ## Technologies
 - Python
@@ -19,34 +23,23 @@ To run the project in your own local environment, follow these steps:
 Input the file path of the traffic camera video you want to monitor inside the variable FILE_PATH. A window will then open on your device displaying the same video you have uploaded and will detect and identify cars by bounding them in a green rectangle and also indicating estimates of their speed above it. It will also automatically issue tickets to cars which exceed the value of SPEED_LIMIT in detect_car.py and store the values of detected speed and fine amount in a txt file.
 
 
-## The process (How I built it)
+## The process
+I intially wanted to use torchvision model SSDlite which is trained in object detection, instance segmentation and person keypoint detection but after runnin initial tests with it, I found that it was running the video at extremely low fps. And so I looked for a better model and came to use the YOLOv8 nano from Ultralytics which proved to be superior in not just the video playing capabilities but also its built-in tracking and simpler use of object/id tracking using model.track() whereas when I was using pytorch, I had to convert the video/frames to tensors and then unsqueeze(dim=0) to resolve the shape mismatch. 
 
-was intially using a pytorch model but ran into real time object detection limittations and so decided to swap over to ultralytics YOLO model 
+I was also initally using backgroundsubtractorMOG2 from the OpenCV library but ultimately removed it because the YOLO model replaced it entirely and is able to get it closer to real time detection. The old code used MOG2 to detect motion before passing to the model while YOLO does detection and tracking in one call without needing MOG2 at all.
 
-the speed is too high because im not tracking the frame rate of the actual video, solved this by implementing frame count and car tracker into the function 
+### What model.track() outputs and how results[0].boxes.id works
+How the YOLO model works is that for each object it detects and keeps track of, model.track() outputs 4 attributes of custom YOLO boxes that contain tensors.'xyxy' represents initial and final xy coordinates, 'cls' represents the class of the object identified, 'conf' represents the confidence that the object is a car which is then measured against the CONFIDENCE_THRESHOLD in detect_car.py and 'id' keeps track of the object, meaning the same object that is identified when it first enters the frame is tagged to this same id throughout.
 
-have the issue of the initial calculation appearing too slowly and the subsequent one chaning way too rapidly so i decided to separate them by having initial after 3 frames and the subsequent only update every 20 frames so its more stable, increasing the value of frames_since_update lets the speed text be more stable and consistent as opposed to rapidly changing and found the best results with 60
-
-was initally using backgroundsubtractorMOG2 but YOLO replaced that entirely. Your old code used MOG2 to detect motion before passing to the model. Now YOLO does detection and tracking in one call without needing MOG2 at all.
-
-after it has appeared in at least 20 frames, this is to ensure that the initial speed, which is well above what the car is actually moving at, is not taken 
+### What car_tracker[track_id] is doing
+car_tracker is an empty dictionary initialised at the top of detect_car.py and car_tracker[track_id] keeps track of each unique car that enters the frame, storing 7 keys and their respective values. The values associated with frames help to make it so that we only calculate and display the speed of a car once it has been in 2 frames and updates the values again every subsequent 5 frames. The variable frames_since_first helps to store the number of frames since the car is appeared and if that value meets the criteria, which is in this case 20 and a reading of 3, only then will the speed of the car be displayed. This is to overcome the problem of the cars being assigned unnaturally high speeds when they first enter the frame and only displays their speed after the speed has stabilised and no longer fluctuates rapidly.
 
 ## What I learnt 
-
-results[0].boxes
- returns a Boxes object containing:
- .xyxy — bounding box coordinates [x1, y1, x2, y2]
-tensor([[ 100.,  200.,  300.,  400.],   # box 1 — car
-        [ 450.,  150.,  650.,  350.],   # box 2 — car  
-        [ 200.,  300.,  280.,  380.]])  # box 3 — person
-.cls — class label for each box
-tensor([2., 2., 0.])    # 2=car, 2=car, 0=person
- .conf — confidence score for each box
-tensor([0.92, 0.87, 0.45])
- .id — tracking ID (only when using model.track)
-tensor([3., 7., 12.])   # car3, car7, person12
+I learnt that model selection is important
 
 dont reset your model by putting it inside of a loop or else it will cause choppy video/low fps
+
+after it has appeared in at least 20 frames, this is to ensure that the initial speed, which is well above what the car is actually moving at, is not taken 
 
 ## Limitations
 While working on this, I found 3 main limitations of this real-time object detection system.
