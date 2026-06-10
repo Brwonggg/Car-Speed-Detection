@@ -4,82 +4,61 @@ import torch
 import torchvision
 import math 
 import time
+from ultralytics import YOLO
+
+device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
 WEIGHTS = "SSDLite320_MobileNet_V3_Large_Weights.DEFAULT"
-model = torchvision.models.detection.ssdlite320_mobilenet_v3_large(weights=WEIGHTS)
+model = YOLO("yolov8n.pt")
+
+model = model.to(device)
+print(f"Using: {device}")
+
 model.eval()
 
-CONFIDENCE_THRESHOLD = 0.5
+CONFIDENCE_THRESHOLD = 0.3
 FRAME_RATE = 31
 PPM = 10
 SPEED_LIMIT = 50
 FINE_AMOUNT = 25
-SCALE = 0.25
 
-def estimate_speed(pos1, pos2, PPM, FRAME_RATE, frames_elapsed):
+
+def estimate_speed(pos1, pos2, PPM, FRAME_RATE):
     dist_pixels = math.sqrt((pos2[0] - pos1[0]) ** 2 + (pos2[1] - pos1[1]) ** 2)
     dist_meter = dist_pixels / PPM
-    time_elapsed = frames_elapsed / FRAME_RATE
-    speed = dist_meter / time_elapsed * 3.6
+    speed = dist_meter / FRAME_RATE * 3.6
     return speed 
 
-def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker):
+def detect_car(frame, FRAME_RATE, PPM):
     global pos_list_prev
+    results = model(frame, verbose=False)
     
-    img_tensor = torchvision.transforms.ToTensor()(frame)
-    with torch.inference_mode():
-        preds = model(img_tensor.unsqueeze(dim=0))
-        for i, (pred, score) in enumerate(zip(preds[0]["boxes"], preds[0]["scores"])):
-            x1, y1, x2, y2 = map(int, pred)
-            if score >= CONFIDENCE_THRESHOLD:
-                cv.rectangle(frame,(x1,y1), (x2,y2), (0,255,0), 2)
-                centroid_x = (x1 + x2) / 2
-                centroid_y = (y1 + y2) / 2
-                pos_list = [centroid_x, centroid_y]
+    for i, box in enumerate(results[0].boxes):
+        cls   = int(box.cls[0])
+        score = float(box.conf[0])
 
-                if i not in car_tracker:
-                    car_tracker[i] = {"pos": pos_list, "frame": frame_count,"speed": None, "last_update": frame_count}
-                    speed_text = "calculating..."
+        if cls != 2 or score < CONFIDENCE_THRESHOLD:
+            continue
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        if score >= CONFIDENCE_THRESHOLD:
+            cv.rectangle(frame,(x1,y1), (x2,y2), (0,255,0), 2)
+            centroid_x = (x1 + x2) / 2
+            centroid_y = (y1 + y2) / 2
+            pos_list = [centroid_x, centroid_y]
 
-                else:
-                    pos1 = car_tracker[i]["pos"]
-                    frame_started  = car_tracker[i]["frame"]
-                    frames_elapsed = frame_count - frame_started
-                    frames_since_update = frame_count - car_tracker[i]["last_update"]
-
-                    if frames_elapsed >= 4 and (car_tracker[i]["speed"] is None or frames_since_update >= 30):   # wait at least 10 frames for stable reading
-                        speed = estimate_speed(pos1, pos_list, PPM, FRAME_RATE, frames_elapsed)
-                        car_tracker[i]["speed"] = speed
-                        speed_text = f"{speed:.1f} km/h"
-
-                        if speed >= SPEED_LIMIT:
-                            issue_ticket(speed)
-                            print("Speeding ticket issued")
-                    car_tracker[i]["pos"] = pos_list
-                    car_tracker[i]["frame"] = frame_count
-                        
-                        
-                    # if pos_list_prev is not None:
-                    #     speed = estimate_speed(pos_list_prev, pos_list, PPM, FRAME_RATE, frames_elapsed)
-                    #     if speed >= SPEED_LIMIT:
-                    #         issue_ticket(speed)
-                    #         print("Speeding ticket issued")
-                    
-                    
-                stored_speed = car_tracker[i].get("speed")
-                if stored_speed is not None:
-                    speed = estimate_speed(pos_list_prev, pos_list, PPM, FRAME_RATE, frames_elapsed)
-                    if speed >= SPEED_LIMIT:
-                        issue_ticket(speed)
-                        print("Speeding ticket issued")
-                    speed_text = f"{stored_speed:.1f}km/h"
-                else:
-                    speed = 0
-                    speed_text = "calculating..."
-                
-                cv.putText(frame, f"Speed: {speed_text}", (x1,y1 + 20), cv.FONT_HERSHEY_SIMPLEX, 3, (0,255,0),2)
-                pos_list_prev = pos_list
-        return frame
+            if pos_list_prev is not None:
+                speed = estimate_speed(pos_list_prev, pos_list, PPM, FRAME_RATE)
+                speed_text = int(speed)
+                if speed >= SPEED_LIMIT:
+                    issue_ticket(speed)
+                    print("Speeding ticket issued")
+            else:
+                speed = 0
+                speed_text = "calculating..."
+            
+            cv.putText(frame, f"Speed: {speed_text}", (x1,y1 + 20), cv.FONT_HERSHEY_SIMPLEX, 3, (0,255,0),2)
+            pos_list_prev = pos_list
+    return frame
     
 def issue_ticket(speed):
     filename = "Speeding_Ticket.txt"
@@ -89,8 +68,7 @@ def issue_ticket(speed):
         file.write(f"Fine Amount: ${FINE_AMOUNT}\n")
         file.write("\n")
     
-frame_count = 0 
-car_tracker = {}
+frame_count = 0
 
 cap = cv.VideoCapture('/Users/brandon/Downloads/NEW Moving Cars.mov')
 if not cap.isOpened():
@@ -101,18 +79,22 @@ while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
-    frame_count += 1
-    
-    if frame_count % 2 != 0:   # skip odd frames
-        continue
-    
-    frame = cv.resize(frame, (0,0), fx=SCALE, fy=SCALE)
-    
-    processed_frame = detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker)
 
+    frame_count += 1
+
+    # skip every other frame — halves model calls
+    if frame_count % 2 != 0:
+        continue
+
+    # resize to 25% — 2880x1864 → 720x466
+    #frame = cv.resize(frame, (0, 0), fx=0.25, fy=0.25)
     
-    cv.imshow("Cars Driving",frame)
-    cv.waitKey(int(1000 / FRAME_RATE))
+    start = time.time()
+    processed_frame = detect_car(frame, FRAME_RATE, PPM)
+    end = time.time()
+    print(f"Inference: {(end-start)*1000:.1f}ms")
+    
+    cv.imshow("Cars Driving",processed_frame)
     if cv.waitKey(1) & 0xFF == ord('q'):
         break
 
