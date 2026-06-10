@@ -2,7 +2,7 @@
 
 ## Intro 
 
-This is a practice project to familiarise myself with computer vision
+This is a practice project that utilises computer vision/object detection.
 
 ## Technologies
 - Python
@@ -10,11 +10,11 @@ This is a practice project to familiarise myself with computer vision
 ## Running the Project
 To run the project in your own local environment, follow these steps:
 
-        1. **Clone the repository to your local machine**
-        2. Run 'pip install -r requirements.txt'
-        3. **Drag the traffic video you want to inspect into your terminal**
-        4. **Copy the file path and paste it into the variable FILE_PATH in main.py**
-        5. **Run the code**
+1. **Clone the repository to your local machine**
+2. Run 'pip install -r requirements.txt'
+3. **Drag the traffic video you want to inspect into your terminal**
+4. **Copy the file path and paste it into the variable FILE_PATH in main.py**
+5. **Run the code**
 
 ## Features 
 
@@ -33,8 +33,6 @@ was initally using backgroundsubtractorMOG2 but YOLO replaced that entirely. You
 
 after it has appeared in at least 20 frames, this is to ensure that the initial speed, which is well above what the car is actually moving at, is not taken 
 
-
-
 ## What I learnt 
 
 results[0].boxes
@@ -51,8 +49,6 @@ tensor([0.92, 0.87, 0.45])
 tensor([3., 7., 12.])   # car3, car7, person12
 
 dont reset your model by putting it inside of a loop or else it will cause choppy video/low fps
-
-
 
 ## Limitations
 
