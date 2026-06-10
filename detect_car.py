@@ -1,11 +1,9 @@
 import cv2 as cv
 from ticket import issue_ticket
 from speed import estimate_speed
-from model_setup import model_setup
-from ultralytics import YOLO
 
 CONFIDENCE_THRESHOLD = 0.7
-SPEED_LIMIT = 80
+SPEED_LIMIT = 90
 
 frame_count = 0
 car_tracker = {}
@@ -14,7 +12,8 @@ def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model):
     
     results = model.track(frame, persist=True, verbose=False)
     
-    if results[0].boxes.id is None:   # no detections this frame
+    #No detections this frame
+    if results[0].boxes.id is None:   
         return frame
 
     for box in results[0].boxes:

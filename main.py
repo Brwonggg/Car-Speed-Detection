@@ -1,5 +1,4 @@
 import cv2 as cv
-import time
 from detect_car import detect_car
 from model_setup import model_setup
 
@@ -32,6 +31,7 @@ while cap.isOpened():
     processed_frame = detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model)
     
     cv.imshow("Cars Driving",processed_frame)
+    
     if cv.waitKey(1) & 0xFF == ord('q'):
         break
 
