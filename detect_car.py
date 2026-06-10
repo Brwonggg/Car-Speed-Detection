@@ -5,7 +5,7 @@ from model_setup import model_setup
 from ultralytics import YOLO
 
 CONFIDENCE_THRESHOLD = 0.7
-SPEED_LIMIT = 50
+SPEED_LIMIT = 80
 
 frame_count = 0
 car_tracker = {}
