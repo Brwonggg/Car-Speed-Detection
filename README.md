@@ -16,7 +16,9 @@ To run the project in your own local environment, follow these steps:
 5. **Run the code**
 
 ## Features 
-Input the file path of the traffic camera video you want to monitor inside the variable FILE_PATH. A window will then open on your device displaying the same video you have uploaded and will detect and identify cars by bounding them in a green rectangle and also indicating estimates of their speed above it. It will also automatically issue tickets to cars which exceed the value of SPEED_LIMIT in detect_car.py and store the values of detected speed and fine amount in a txt file.
+1. Input the file path of the traffic camera video you want to monitor inside the variable FILE_PATH. 
+2. A window will then open on your device displaying the same video you have uploaded and will detect and identify cars by bounding them in a green rectangle and also indicating estimates of their speed above it.
+3. It will also automatically issue tickets to cars which exceed the value of SPEED_LIMIT in detect_car.py and store the values of detected speed and fine amount in a txt file.
 
 ## The Process
 I intially wanted to use torchvision model SSDlite which is trained in object detection, instance segmentation and person keypoint detection but after runnin initial tests with it, I found that it was running the video at extremely low fps. And so I looked for a better model and came to use the YOLOv8 nano from Ultralytics which proved to be superior in not just the video playing capabilities but also its built-in tracking and simpler use of object/id tracking using model.track() whereas when I was using pytorch, I had to convert the video/frames to tensors and then unsqueeze(dim=0) to resolve the shape mismatch. 
