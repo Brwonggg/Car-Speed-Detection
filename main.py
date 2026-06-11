@@ -5,36 +5,40 @@ from model_setup import model_setup
 FRAME_RATE = 31
 PPM = 10
 FILE_PATH = ''
-#https://youtu.be/QuUxHIVUoaY?si=Ov5ofi-zgoFhHGA6 <- Link to original video I used
+#https://youtu.be/QuUxHIVUoaY?si=Ov5ofi-zgoFhHGA6 <- Link to original video used
 
-frame_count = 0
-car_tracker = {}
+if __name__ == "__main__":
 
-model = model_setup()
+    frame_count = 0
+    car_tracker = {}
 
-cap = cv.VideoCapture(FILE_PATH)
-if not cap.isOpened():
-    print("Error: Unable to load video")
-    exit()
+    model = model_setup()
 
-while cap.isOpened():
-    ret, frame = cap.read()
-    
-    if not ret:
-        break
+    cap = cv.VideoCapture(FILE_PATH)
+    if not cap.isOpened():
+        print("Error: Unable to load video")
+        exit()
 
-    frame_count += 1
+    while cap.isOpened():
+        ret, frame = cap.read()
+        
+        if not ret:
+            break
 
-    #Skip every other frame — fix low fps
-    if frame_count % 2 != 0:
-        continue
+        frame_count += 1
 
-    processed_frame = detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model)
-    
-    cv.imshow("Cars Driving",processed_frame)
-    
-    if cv.waitKey(1) & 0xFF == ord('q'):
-        break
+        #Skip every other frame — fix low fps
+        if frame_count % 2 != 0:
+            continue
 
-cap.release()
-cv.destroyAllWindows()
+        processed_frame = detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model)
+        
+        cv.imshow("Cars Driving",processed_frame)
+        
+        if cv.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv.destroyAllWindows()
+
+
