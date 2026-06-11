@@ -4,7 +4,8 @@ from model_setup import model_setup
 
 FRAME_RATE = 31
 PPM = 10
-FILE_PATH = '/Users/brandon/Downloads/NEW Moving Cars.mov'
+FILE_PATH = ''
+#https://youtu.be/QuUxHIVUoaY?si=Ov5ofi-zgoFhHGA6 <- Link to original video I used
 
 frame_count = 0
 car_tracker = {}
