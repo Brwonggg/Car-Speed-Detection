@@ -1,6 +1,8 @@
 import cv2 as cv
 from ticket import issue_ticket
 from speed import estimate_speed
+from ultralytics import YOLO
+import numpy as np
 
 CONFIDENCE_THRESHOLD = 0.7
 SPEED_LIMIT = 90
@@ -8,8 +10,20 @@ SPEED_LIMIT = 90
 frame_count = 0
 car_tracker = {}
 
-def detect_car(frame, FRAME_RATE, PPM, frame_count, car_tracker, model):
+def detect_car(frame: np.ndarray, FRAME_RATE: int, PPM: int, frame_count: int, car_tracker: dict, model: YOLO):
+    """Passes in the video and annotates it with bounding rectangles and speed estimates displayed
     
+    Args:
+        frame: np.ndarray that stores the values for each image/snapshot in the video
+        FRAME_RATE: int constant value hard-coded in main.py
+        PPM: int constant value hard-coded in main.py
+        frame_count: int keeping track of the number of frames the car has been in 
+        car_tracker: dict storing 7 attributes of each car identified
+        model: YOLO model set up through model_setup()
+
+    Returns:
+        np.ndarray for each snapshot but with a car's speed and a rectangle encapsulating the car   
+    """
     #model.track recognises the same car throughout the frames
     results = model.track(frame, persist=True, verbose=False)
     
