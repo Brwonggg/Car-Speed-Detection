@@ -1,6 +1,6 @@
 ## Preview
 
-https://github.com/user-attachments/assets/1c5c7c5c-bf9b-4574-a324-189e6fba57ab
+![Car Speed Detection Demo](demo.gif)
 
 ## Intro 
 This is a practice project that utilises computer vision/object detection, leveraging a "You Only Look Once"(YOLO) model from Ultralytics.
