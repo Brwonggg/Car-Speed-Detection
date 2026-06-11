@@ -1,4 +1,4 @@
-## Preview(video demonstration)
+## Preview
 
 https://github.com/user-attachments/assets/1c5c7c5c-bf9b-4574-a324-189e6fba57ab
 
@@ -33,7 +33,7 @@ How the YOLO model works is that for each object it detects and keeps track of, 
 ### What car_tracker[track_id] is doing
 car_tracker is an empty dictionary initialised at the top of detect_car.py and car_tracker[track_id] keeps track of each unique car that enters the frame, storing 7 keys and their respective values. The values associated with frames help to make it so that we only calculate and display the speed of a car once it has been in 2 frames and updates the values again every subsequent 5 frames. The variable frames_since_first helps to store the number of frames since the car is appeared and if that value meets the criteria, which is in this case 20 and a reading of 3, only then will the speed of the car be displayed. This is to overcome the problem of the cars being assigned unnaturally high speeds when they first enter the frame and only displays their speed after the speed has stabilised and no longer fluctuates rapidly.
 
-## What I Learnt 
+## Lessons I Learnt 
 I learnt that model selection is very important and can make or break your code. Initially, I was using torchvision model SSDlite but found that it was incompatible with real time object detection and would cause large drops in fps of the video. The idea of the project and the rest of the code was fine, it was the compatibility of the model that became the bottleneck so I had to go and experiment with different kinds of models, even outside of PyTorch.   
 
 I also learnt to not do any form of set up or initialisation in loops. My mistake was that I would initialise my model_setup() inside the while loop in main.py and as a result, while the video was playing, it would continuously set up the model from scratch over and over, causing performance issues. This was also another factor contributing to low fps after I had changed the model.
