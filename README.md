@@ -30,11 +30,13 @@ How the YOLO model works is that for each object it detects and keeps track of, 
 car_tracker is an empty dictionary initialised at the top of detect_car.py and car_tracker[track_id] keeps track of each unique car that enters the frame, storing 7 keys and their respective values. The values associated with frames help to make it so that we only calculate and display the speed of a car once it has been in 2 frames and updates the values again every subsequent 5 frames. The variable frames_since_first helps to store the number of frames since the car is appeared and if that value meets the criteria, which is in this case 20 and a reading of 3, only then will the speed of the car be displayed. This is to overcome the problem of the cars being assigned unnaturally high speeds when they first enter the frame and only displays their speed after the speed has stabilised and no longer fluctuates rapidly.
 
 ## What I Learnt 
-I learnt that model selection is important
+I learnt that model selection is very important and can make or break your code. Initially, I was using torchvision model SSDlite but found that it was incompatible with real time object detection and would cause large drops in fps of the video. The idea of the project and the rest of the code was fine, it was the compatibility of the model that became the bottleneck so I had to go and experiment with different kinds of models, even outside of PyTorch.   
 
-dont reset your model by putting it inside of a loop or else it will cause choppy video/low fps
+I also learnt to not do any form of set up or initialisation in loops. My mistake was that I would initialise my model_setup() inside the while loop in main.py and as a result, while the video was playing, it would continuously set up the model from scratch over and over, causing performance issues. This was also another factor contributing to low fps after I had changed the model.
 
-after it has appeared in at least 20 frames, this is to ensure that the initial speed, which is well above what the car is actually moving at, is not taken 
+Another way to ensure a smooth video playing is by not playing every frame, but instead playing every 2 frames. This means that every other frame is skipped which helps the speed and memory of the CPU. This is most effective when dealing with higher resolution videos but there is a motion-playback tradeoff. With the skip, the motion will be slighlty choppier but the playback will be faster whereas without the skip, the motion will be smoother but the playback will be slower.
+
+I also learnt that the frames_since_start variable and conditional in detect_car.py is very important to have. I found that before I had implemented this condition, when a car initially appears in frame, the speed estimate it gives will be unnaturally high and will cause a ticket to be falsely issued. To solve this issue, the conditional of frames_since_start and a counter must be fulfilled before the speed can be accurately measured and displayed. This is to ensure that the car has appeared on screen for a long enough time and its speed has stabilised/stopped fluctuating rapidly before the system deduces a realistic estimate of its speed.
 
 ## Limitations
 While working on this, I found 3 main limitations of this real-time object detection system.
